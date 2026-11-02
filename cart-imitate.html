@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Imitation learning cart</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="cart-game.js" defer></script>
+  <script src="cart-net.js" defer></script>
+  <script src="cart-imitate.js" defer></script>
+</head>
+<body>
+<main id="page" class="demo rl-page">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="cart-q.html">Q-learning</a><a href="cart-imitate.html" aria-current="page">Imitate me</a></nav>
+  <h1>Imitation learning cart</h1>
+  <div class="rl-layout">
+    <section class="rl-game" aria-labelledby="game-title">
+      <div class="section-head"><h2 id="game-title">Game</h2><span id="episode-label">Game 1</span></div>
+      <div class="segmented" role="group" aria-label="Who drives the cart">
+        <button id="driver-human" type="button" aria-pressed="true">You drive</button>
+        <button id="driver-network" type="button" aria-pressed="false">Network drives</button>
+      </div>
+      <svg id="game" viewBox="0 0 600 300" role="img" aria-label="A ball is launched from the left; the cart is driven by you or by the network trained on your play"></svg>
+      <p id="play-status" class="status" aria-live="polite"></p>
+      <div class="buttons play-buttons">
+        <button id="launch" type="button">Launch ball</button>
+        <button id="drive-left" class="hold" type="button" aria-label="Drive left (hold)">← Left</button>
+        <button id="drive-right" class="hold" type="button" aria-label="Drive right (hold)">Right →</button>
+      </div>
+      <p id="hint" class="hint"></p>
+      <div class="controls">
+        <label for="speed">Game speed <output id="speed-value" for="speed">1.00×</output></label>
+        <input id="speed" type="range" min="0.25" max="3" step="0.05" value="1">
+        <label for="scale">Game size <output id="scale-value" for="scale">100%</output></label>
+        <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label class="check"><input id="record" type="checkbox" checked> Record my games as training data</label>
+        <label class="check"><input id="auto-launch" type="checkbox"> Auto-launch the next ball</label>
+        <label class="check"><input id="show-landing" type="checkbox"> Show where the ball will land</label>
+      </div>
+    </section>
+    <section class="rl-side">
+      <div class="section-head"><h2>Your data</h2></div>
+      <div class="dataset-stats rl-stats">
+        <div>Games recorded <strong id="stat-games">0</strong></div>
+        <div>You caught <strong id="stat-human">–</strong></div>
+        <div>Train / validation <strong id="stat-split">0 / 0</strong></div>
+      </div>
+      <p id="data-hint" class="hint data-note">Play a few games to collect data.</p>
+      <div class="buttons"><button id="train" type="button">Train network</button><button id="clear" type="button">Clear data</button></div>
+
+      <div class="section-head"><h2 id="training-title">Training</h2><span id="epoch-label">not trained</span></div>
+      <div class="controls training-controls">
+        <label for="epochs">Epochs <output id="epochs-value" for="epochs">100</output></label>
+        <input id="epochs" type="range" min="10" max="300" step="10" value="100">
+        <label class="check"><input id="live" type="checkbox"> Train while you play (one update per step)</label>
+      </div>
+      <div class="dataset-stats rl-stats">
+        <div>Train accuracy <strong id="stat-train">–</strong></div>
+        <div>Validation accuracy <strong id="stat-val">–</strong></div>
+        <div>Network catch rate <strong id="stat-network">–</strong></div>
+      </div>
+      <svg id="accuracy-chart" class="chart" viewBox="0 0 500 200" role="img" aria-labelledby="training-title"></svg>
+      <div class="legend"><span><i class="boundary-line"></i> train accuracy</span><span><i class="actual-line"></i> validation accuracy</span><span><i class="test-dot"></i> network catch rate</span></div>
+
+      <div class="section-head"><h2 id="decisions-title">Decisions</h2><button id="decisions-toggle" class="head-toggle" type="button" aria-expanded="false" aria-controls="decisions-panel">Show</button></div>
+      <div id="decisions-panel" hidden>
+      <p class="hint panel-note">Your key presses vs the network's choice for the current ball (blank: off the track)</p>
+      <svg id="decisions" class="chart" viewBox="0 0 500 245" role="img" aria-labelledby="decisions-title"></svg>
+      <div class="legend"><span><i class="left-dot"></i> you: left</span><span><i class="coast-dot"></i> you: coast</span><span><i class="right-dot"></i> you: right</span><span><i class="swatch left-fill"></i><i class="swatch coast-fill"></i><i class="swatch right-fill"></i> network, for this ball</span><span><i class="current-dot"></i> cart now</span></div>
+      </div>
+      <div class="section-head"><h2 id="network-title">Network</h2></div>
+      <svg id="network" class="network q-network" viewBox="0 0 500 270" role="img" aria-labelledby="network-title"></svg>
+      <div class="legend"><span><i class="weight-pos"></i> positive weight</span><span><i class="weight-neg"></i> negative weight</span></div>
+      <div class="formulas">
+        <div>data: (s, a) every 0.05 s · a = your key</div>
+        <div>p(a | s) = softmax(network(s))</div>
+        <div>loss = −log p(your action | s)</div>
+        <div class="formula-note">every 5th game is held out for validation</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fixed dataset perceptron</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="dataset.js" defer></script>
+</head>
+<body>
+<main class="demo">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html" aria-current="page">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="cart-q.html">Q-learning</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Fixed dataset perceptron</h1>
+  <div class="columns">
+    <section aria-labelledby="plot-title">
+      <div class="section-head"><h2 id="plot-title">Position × velocity</h2><span id="epoch-label">Epoch 1</span></div>
+      <svg id="plot" viewBox="0 0 500 360" role="img" aria-label="Fixed training and test points with the perceptron decision boundary"></svg>
+      <div class="legend"><span><i class="left-dot"></i> left</span><span><i class="right-dot"></i> right</span><span><i class="train-dot"></i> train</span><span><i class="test-dot"></i> test</span><span><i class="current-dot"></i> next example</span></div>
+    </section>
+    <section aria-labelledby="training-title">
+      <div class="section-head"><h2 id="training-title">Training</h2><span id="sample-label">Example 1 / 16</span></div>
+      <div class="dataset-stats"><div>Train (16) <strong id="train-accuracy">0%</strong></div><div>Test (8) <strong id="test-accuracy">0%</strong></div><div>Updates <strong id="update-count">0</strong></div></div>
+      <p id="example-status" class="status" aria-live="polite"></p>
+      <div class="controls">
+        <label for="rate">Learning rate <output id="rate-value" for="rate">0.20</output></label>
+        <input id="rate" type="range" min="0.05" max="0.6" step="0.01" value="0.20">
+        <label for="speed">Speed <output id="speed-value" for="speed">1.0×</output></label>
+        <input id="speed" type="range" min="0.5" max="15" step="0.1" value="1">
+        <div class="buttons"><button id="step" type="button">Step</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="reset" type="button">Reset</button></div>
+      </div>
+      <svg class="network dataset-network" viewBox="0 0 500 135" role="img" aria-label="Perceptron inputs x, v, and bias connected to a decision node with learned weights">
+        <line x1="82" y1="22" x2="410" y2="67" /><line x1="82" y1="67" x2="410" y2="67" /><line x1="82" y1="112" x2="410" y2="67" />
+        <circle cx="70" cy="22" r="13" /><circle cx="70" cy="67" r="13" /><circle cx="70" cy="112" r="13" />
+        <circle class="output-node" cx="423" cy="67" r="17" />
+        <text x="70" y="26" text-anchor="middle">x</text><text x="70" y="71" text-anchor="middle">v</text><text x="70" y="116" text-anchor="middle">1</text><text x="423" y="71" text-anchor="middle">±</text>
+        <text id="weight-x" class="weight" x="215" y="30"></text><text id="weight-v" class="weight" x="215" y="62"></text><text id="weight-b" class="weight" x="215" y="107"></text>
+      </svg>
+      <div id="update-delta" class="update-delta" aria-live="polite"></div>
+      <div class="formulas">
+        <div>landing = x + 0.8v</div>
+        <div>choice = sign(wₓx + wᵥv + b)</div>
+        <div>mistake: (wₓ, wᵥ, b) ← (wₓ, wᵥ, b) + ηy(x, v, 1)</div>
+        <div class="formula-note">y = +1 right, −1 left · test points are never used for updates</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

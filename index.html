@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perceptron catch game</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<main class="demo">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html" aria-current="page">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="cart-q.html">Q-learning</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Perceptron catch game</h1>
+  <div class="columns">
+    <section aria-labelledby="game-title">
+      <div class="section-head"><h2 id="game-title">Game</h2><span id="round-label">Round 1</span></div>
+      <svg id="game" viewBox="0 0 600 300" role="img" aria-label="Ball and robot catcher">
+        <rect x="10" y="69" width="580" height="18" fill="#edf4ff" />
+        <text x="580" y="82" text-anchor="end">DECISION</text>
+        <line x1="370" y1="192" x2="370" y2="278" stroke="#dee2e6" stroke-dasharray="4 5" />
+        <path id="trail" fill="none" stroke="#adb5bd" stroke-opacity=".55" stroke-width="1.5" />
+        <g id="cart" transform="translate(370 0)">
+          <path d="M -90 218 L -78 248 Q 0 268 78 248 L 90 218" fill="#e9ecef" stroke="#495057" stroke-width="3" stroke-linejoin="round" />
+          <line x1="-55" y1="257" x2="55" y2="257" stroke="#6c757d" stroke-width="3" />
+          <circle cx="-55" cy="270" r="7" fill="#495057" />
+          <circle cx="55" cy="270" r="7" fill="#495057" />
+        </g>
+        <circle id="ball" cx="130" cy="32" r="9" fill="#212529" />
+        <text x="280" y="295" text-anchor="middle">LEFT</text>
+        <text x="460" y="295" text-anchor="middle">RIGHT</text>
+      </svg>
+      <p id="round-status" class="status" aria-live="polite">x = 0.00 · v = 0.00 · Ready</p>
+      <div class="controls">
+        <label for="rate">Learning rate <output id="rate-value" for="rate">0.20</output></label>
+        <input id="rate" type="range" min="0.05" max="0.6" step="0.01" value="0.20">
+        <label for="speed">Speed <output id="speed-value" for="speed">1.0×</output></label>
+        <input id="speed" type="range" min="0.5" max="15" step="0.1" value="1">
+        <div class="buttons">
+          <button id="step" type="button">Step</button>
+          <button id="continuous" type="button" aria-pressed="false">Run continuously</button>
+          <button id="reset" type="button">Reset</button>
+        </div>
+      </div>
+    </section>
+    <section aria-labelledby="plot-title">
+      <div class="section-head"><h2 id="plot-title">Perceptron</h2><span id="count-label">0 rounds</span></div>
+      <svg id="plot" viewBox="0 0 500 360" role="img" aria-label="Position and velocity scatter plot with decision boundary"></svg>
+      <div class="legend"><span><i class="left-dot"></i> left</span><span><i class="right-dot"></i> right</span><span><i class="miss-dot"></i> miss</span><span><i class="boundary-line"></i> boundary</span></div>
+      <svg class="network" viewBox="0 0 500 135" role="img" aria-label="Perceptron inputs x, v, and bias connected to a decision node with learned weights">
+        <line x1="82" y1="22" x2="410" y2="67" />
+        <line x1="82" y1="67" x2="410" y2="67" />
+        <line x1="82" y1="112" x2="410" y2="67" />
+        <circle cx="70" cy="22" r="13" /><circle cx="70" cy="67" r="13" /><circle cx="70" cy="112" r="13" />
+        <circle class="output-node" cx="423" cy="67" r="17" />
+        <text x="70" y="26" text-anchor="middle">x</text>
+        <text x="70" y="71" text-anchor="middle">v</text>
+        <text x="70" y="116" text-anchor="middle">1</text>
+        <text x="423" y="71" text-anchor="middle">±</text>
+        <text id="weight-x" class="weight" x="215" y="30">wₓ = +0.12</text>
+        <text id="weight-v" class="weight" x="215" y="62">wᵥ = −0.45</text>
+        <text id="weight-b" class="weight" x="215" y="107">b = +0.16</text>
+      </svg>
+      <div id="update-delta" class="update-delta" aria-live="polite"></div>
+      <div class="formulas">
+        <div>landing = x + 0.8v</div>
+        <div>choice = sign(wₓx + wᵥv + b)</div>
+        <div>miss: (wₓ, wᵥ, b) ← (wₓ, wᵥ, b) + ηy(x, v, 1)</div>
+        <div class="formula-note">x, v: centered position and speed · y = +1 right, −1 left</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

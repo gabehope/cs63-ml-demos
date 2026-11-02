@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ballistic neural network</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="neural.js" defer></script>
+</head>
+<body>
+<main class="demo">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html" aria-current="page">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="cart-q.html">Q-learning</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Ballistic neural network</h1>
+  <div class="columns">
+    <section aria-labelledby="game-title">
+      <div class="section-head"><h2 id="game-title">Launch</h2><span id="round-label">Round 1</span></div>
+      <svg id="game" viewBox="0 0 600 310" role="img" aria-label="Ball launched from the ground toward a left or right cart position">
+        <rect x="90" y="20" width="16" height="239" fill="#edf4ff" />
+        <text x="98" y="15" text-anchor="middle">DECIDE</text>
+        <line x1="350" y1="202" x2="350" y2="278" stroke="#dee2e6" stroke-dasharray="4 5" />
+        <line x1="14" y1="278" x2="582" y2="278" stroke="#dee2e6" />
+        <path id="trail" fill="none" stroke="#adb5bd" stroke-opacity=".55" stroke-width="1.5" />
+        <circle cx="40" cy="249" r="11" fill="#e9ecef" stroke="#6c757d" stroke-width="2" />
+        <line id="barrel" x1="40" y1="249" x2="58" y2="231" stroke="#6c757d" stroke-width="6" stroke-linecap="round" />
+        <g id="cart" transform="translate(350 0)">
+          <path d="M -80 218 L -70 248 Q 0 268 70 248 L 80 218" fill="#e9ecef" stroke="#495057" stroke-width="3" stroke-linejoin="round" />
+          <line x1="-48" y1="257" x2="48" y2="257" stroke="#6c757d" stroke-width="3" />
+          <circle cx="-48" cy="270" r="7" fill="#495057" /><circle cx="48" cy="270" r="7" fill="#495057" />
+        </g>
+        <circle id="ball" cx="40" cy="249" r="8" fill="#212529" />
+        <text x="270" y="301" text-anchor="middle">LEFT</text><text x="430" y="301" text-anchor="middle">RIGHT</text>
+      </svg>
+      <p id="round-status" class="status" aria-live="polite"></p>
+      <div class="controls">
+        <label for="activation">Hidden activation</label>
+        <select id="activation"><option value="relu">ReLU</option><option value="sigmoid">Sigmoid</option></select>
+        <label for="rate">Learning rate <output id="rate-value" for="rate">0.10</output></label>
+        <input id="rate" type="range" min="0.02" max="0.3" step="0.01" value="0.10">
+        <label for="speed">Speed <output id="speed-value" for="speed">1.0×</output></label>
+        <input id="speed" type="range" min="0.5" max="15" step="0.1" value="1">
+        <div class="buttons"><button id="step" type="button">Step</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="reset" type="button">Reset</button></div>
+      </div>
+    </section>
+    <section aria-labelledby="plot-title">
+      <div class="section-head"><h2 id="plot-title">Angle × speed</h2><span id="count-label">0 rounds</span></div>
+      <svg id="plot" viewBox="0 0 500 360" role="img" aria-label="Launch angle versus speed with neural network and landing boundaries"></svg>
+      <div class="legend"><span><i class="left-dot"></i> left</span><span><i class="right-dot"></i> right</span><span><i class="miss-dot"></i> miss</span><span><i class="boundary-line"></i> network</span><span><i class="actual-line"></i> landing boundary</span></div>
+      <svg class="network network-hidden" viewBox="0 0 500 305" role="group" aria-label="Neural network. Select a node to show its output on the plot.">
+        <path d="M 45 70 L 245 40 M 45 70 L 245 150 M 45 70 L 245 260 M 45 230 L 245 40 M 45 230 L 245 150 M 45 230 L 245 260 M 245 40 L 445 150 M 245 150 L 445 150 M 245 260 L 445 150" fill="none" stroke="#adb5bd" stroke-width="1.5" />
+        <text id="input-weight-1-a" class="weight" x="125" y="50" text-anchor="middle"></text>
+        <text id="input-weight-2-a" class="weight" x="125" y="94" text-anchor="middle"></text>
+        <text id="input-weight-3-a" class="weight" x="125" y="138" text-anchor="middle"></text>
+        <text id="input-weight-1-u" class="weight" x="175" y="99" text-anchor="middle"></text>
+        <text id="input-weight-2-u" class="weight" x="175" y="170" text-anchor="middle"></text>
+        <text id="input-weight-3-u" class="weight" x="175" y="238" text-anchor="middle"></text>
+        <text id="output-weight-1" class="weight" x="355" y="92" text-anchor="middle"></text>
+        <text id="output-weight-2" class="weight" x="355" y="143" text-anchor="middle"></text>
+        <text id="output-weight-3" class="weight" x="355" y="192" text-anchor="middle"></text>
+        <circle id="node-a" class="selectable-node" cx="45" cy="70" r="14" role="button" tabindex="0" aria-label="Show angle input on plot" aria-pressed="false" />
+        <circle id="node-u" class="selectable-node" cx="45" cy="230" r="14" role="button" tabindex="0" aria-label="Show speed input on plot" aria-pressed="false" />
+        <circle id="node-h1" class="selectable-node" cx="245" cy="40" r="14" role="button" tabindex="0" aria-label="Show hidden neuron 1 output on plot" aria-pressed="false" />
+        <circle id="node-h2" class="selectable-node" cx="245" cy="150" r="14" role="button" tabindex="0" aria-label="Show hidden neuron 2 output on plot" aria-pressed="false" />
+        <circle id="node-h3" class="selectable-node" cx="245" cy="260" r="14" role="button" tabindex="0" aria-label="Show hidden neuron 3 output on plot" aria-pressed="false" />
+        <circle id="node-p" class="selectable-node output-node" cx="445" cy="150" r="18" role="button" tabindex="0" aria-label="Show network output on plot" aria-pressed="false" />
+        <text x="45" y="74" text-anchor="middle">a</text><text x="45" y="234" text-anchor="middle">u</text>
+        <text x="245" y="44" text-anchor="middle">h₁</text><text x="245" y="154" text-anchor="middle">h₂</text><text x="245" y="264" text-anchor="middle">h₃</text>
+        <text x="445" y="154" text-anchor="middle">p</text>
+        <text id="hidden-bias-1" class="bias" x="245" y="75" text-anchor="middle"></text>
+        <text id="hidden-bias-2" class="bias" x="245" y="185" text-anchor="middle"></text>
+        <text id="hidden-bias-3" class="bias" x="245" y="295" text-anchor="middle"></text>
+        <text id="output-bias" class="bias" x="445" y="185" text-anchor="middle"></text>
+      </svg>
+      <div class="formulas">
+        <div>range = v² sin(2θ) / 9.8 · right if range ≥ 13.5</div>
+        <div>a = (θ − 45°) / 25° · u = (v − 12) / 2</div>
+        <div>h = φ(W[a, u] + b) · p = σ(q·h + c)</div>
+        <div>choice: right if p ≥ 0.5 · train after each round</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

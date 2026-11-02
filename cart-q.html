@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q-learning cart</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="cart-game.js" defer></script>
+  <script src="cart-net.js" defer></script>
+  <script src="cart-q.js" defer></script>
+</head>
+<body>
+<main id="page" class="demo rl-page">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="cart-q.html" aria-current="page">Q-learning</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Q-learning cart</h1>
+  <div class="rl-layout">
+    <section class="rl-game" aria-labelledby="game-title">
+      <div class="section-head"><h2 id="game-title">Game</h2><span id="episode-label">Episode 1</span></div>
+      <svg id="game" viewBox="0 0 600 300" role="img" aria-label="A ball is launched from the left; the agent drives the cart to catch it"></svg>
+      <p id="q-status" class="status" aria-live="off"></p>
+      <div class="q-bars" aria-label="Q-values for the current state">
+        <div class="q-row" id="q-row-0"><span>← Left</span><span class="value-bar"><i></i></span><span class="q-value"></span></div>
+        <div class="q-row" id="q-row-1"><span>Coast</span><span class="value-bar"><i></i></span><span class="q-value"></span></div>
+        <div class="q-row" id="q-row-2"><span>Right →</span><span class="value-bar"><i></i></span><span class="q-value"></span></div>
+      </div>
+      <div class="controls">
+        <label for="rate">Learning rate <output id="rate-value" for="rate">0.0010</output></label>
+        <input id="rate" type="range" min="0.0001" max="0.004" step="0.0001" value="0.001">
+        <label for="gamma">Discount γ <output id="gamma-value" for="gamma">0.980</output></label>
+        <input id="gamma" type="range" min="0.8" max="0.995" step="0.005" value="0.98">
+        <label for="epsilon">Exploration ε <output id="epsilon-value" for="epsilon">1.00</output></label>
+        <input id="epsilon" type="range" min="0" max="1" step="0.01" value="1">
+        <label for="reward-mode">Reward</label>
+        <select id="reward-mode"><option value="distance">+1 catch · −d/10 miss</option><option value="catch">+1 catch · −1 miss</option></select>
+        <label for="speed">Speed <output id="speed-value" for="speed">1.0×</output></label>
+        <input id="speed" type="range" min="0.5" max="20" step="0.5" value="1">
+        <label for="scale">Game size <output id="scale-value" for="scale">100%</output></label>
+        <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label class="check"><input id="fast" type="checkbox"> Fast-forward (skip animation)</label>
+        <label class="check"><input id="show-landing" type="checkbox"> Show where the ball will land</label>
+        <div class="buttons"><button id="step" type="button">Step</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="reset" type="button">Reset</button></div>
+      </div>
+    </section>
+    <section class="rl-side">
+      <div class="section-head"><h2 id="reward-title">Reward per episode</h2><span id="count-label">0 episodes</span></div>
+      <div class="dataset-stats rl-stats">
+        <div>Caught <strong id="stat-caught">0</strong></div>
+        <div>Missed <strong id="stat-missed">0</strong></div>
+        <div>Success (last 50) <strong id="stat-rate">–</strong></div>
+        <div>Avg reward (last 50) <strong id="stat-reward">–</strong></div>
+      </div>
+      <svg id="reward-chart" class="chart" viewBox="0 0 500 220" role="img" aria-labelledby="reward-title"></svg>
+      <div class="legend"><span><i class="right-dot"></i> caught</span><span><i class="miss-fill"></i> missed</span><span><i class="boundary-line"></i> average of last 50</span><span id="memory-label"></span></div>
+
+      <div class="section-head"><h2 id="policy-title">Policy slice</h2><button id="policy-toggle" class="head-toggle" type="button" aria-expanded="false" aria-controls="policy-panel">Show</button></div>
+      <div id="policy-panel" hidden>
+      <p class="hint panel-note">Greedy action for the current ball, at every cart x and v</p>
+      <svg id="policy" class="chart" viewBox="0 0 500 250" role="img" aria-labelledby="policy-title"></svg>
+      <div class="legend"><span><i class="swatch left-fill"></i> left</span><span><i class="swatch coast-fill"></i> coast</span><span><i class="swatch right-fill"></i> right</span><span><i class="current-dot"></i> cart this episode</span><span><i class="landing-line"></i> ball lands</span></div>
+      </div>
+
+      <div class="section-head"><h2 id="network-title">Q-network</h2></div>
+      <svg id="network" class="network q-network" viewBox="0 0 500 270" role="img" aria-labelledby="network-title"></svg>
+      <div class="legend"><span><i class="weight-pos"></i> positive weight</span><span><i class="weight-neg"></i> negative weight</span></div>
+      <div class="formulas">
+        <div>s = (bx, by, bvx, bvy, cx, cv) · actions: left, coast, right</div>
+        <div>act: random with prob. ε, else argmax<sub>a</sub> Q(s, a)</div>
+        <div>target y = r + γ · Q<sub>target</sub>(s′, argmax<sub>a′</sub> Q(s′, a′)) · y = r at the end</div>
+        <div>update: minimise Huber(Q(s, a) − y) with Adam</div>
+        <div class="formula-note">r = 0 until the ball arrives · replay memory 20 000 steps, batch 32 · target net copied every 300 updates · ε × 0.99 per episode (floor 0.05)</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

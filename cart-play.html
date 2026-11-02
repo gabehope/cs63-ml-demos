@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drive the cart</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="cart-game.js" defer></script>
+  <script src="cart-play.js" defer></script>
+</head>
+<body>
+<main id="page" class="demo rl-page">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html" aria-current="page">Drive the cart</a><a href="cart-q.html">Q-learning</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Drive the cart</h1>
+  <div class="rl-layout">
+    <section class="rl-game" aria-labelledby="game-title">
+      <div class="section-head"><h2 id="game-title">Game</h2><span id="episode-label">Episode 1</span></div>
+      <svg id="game" viewBox="0 0 600 300" role="img" aria-label="A ball is launched from the left; drive the cart along the track to catch it"></svg>
+      <p id="play-status" class="status" aria-live="polite"></p>
+      <div class="buttons play-buttons">
+        <button id="launch" type="button">Launch ball</button>
+        <button id="drive-left" class="hold" type="button" aria-label="Drive left (hold)">← Left</button>
+        <button id="drive-right" class="hold" type="button" aria-label="Drive right (hold)">Right →</button>
+        <button id="reset" type="button">Reset</button>
+      </div>
+      <p class="hint">Space launches · hold ← / → (or A / D) to run the motor · let go to coast</p>
+      <div class="controls">
+        <label for="speed">Game speed <output id="speed-value" for="speed">1.00×</output></label>
+        <input id="speed" type="range" min="0.25" max="1.5" step="0.05" value="1">
+        <label for="scale">Game size <output id="scale-value" for="scale">100%</output></label>
+        <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label class="check"><input id="show-landing" type="checkbox"> Show where the ball will land</label>
+      </div>
+    </section>
+    <section class="rl-side">
+      <div class="section-head"><h2>State</h2><span>what an agent would see</span></div>
+      <table class="state-table" aria-label="Current state">
+        <tbody id="state-rows"></tbody>
+      </table>
+      <div class="section-head"><h2 id="reward-title">Reward per episode</h2><span id="count-label">0 episodes</span></div>
+      <div class="dataset-stats rl-stats">
+        <div>Caught <strong id="stat-caught">0</strong></div>
+        <div>Missed <strong id="stat-missed">0</strong></div>
+        <div>Success (last 20) <strong id="stat-rate">–</strong></div>
+      </div>
+      <svg id="reward-chart" class="chart" viewBox="0 0 500 220" role="img" aria-labelledby="reward-title"></svg>
+      <div class="legend"><span><i class="right-dot"></i> caught</span><span><i class="miss-fill"></i> missed</span><span><i class="boundary-line"></i> average of last 20</span></div>
+      <div class="formulas">
+        <div>actions: ← motor left · coast · motor right →</div>
+        <div>cart: v ← v + (14·a − 0.6·v)·Δt, a ∈ {−1, 0, +1}</div>
+        <div>coasting adds rolling friction (2 m/s²)</div>
+        <div>reward: +1 catch · miss by d metres: −min(1, d / 10)</div>
+        <div class="formula-note">keys are read every 0.05 s, the same rate the Q-learning agent picks actions</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

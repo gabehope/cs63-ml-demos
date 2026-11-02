@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Play catch game</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="play.js" defer></script>
+</head>
+<body>
+<main class="demo">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html" aria-current="page">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="cart-q.html">Q-learning</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Play catch game</h1>
+  <div id="play-layout" class="columns play-layout">
+  <section aria-labelledby="game-title">
+    <div class="section-head"><h2 id="game-title">Game</h2><span id="score">0 caught / 0 rounds</span></div>
+    <svg id="game" viewBox="0 0 600 300" role="img" aria-label="Ball and cart catching game">
+      <rect x="10" y="69" width="580" height="18" fill="#edf4ff" />
+      <text x="580" y="82" text-anchor="end">DECISION</text>
+      <line x1="370" y1="192" x2="370" y2="278" stroke="#dee2e6" stroke-dasharray="4 5" />
+      <path id="trail" fill="none" stroke="#adb5bd" stroke-opacity=".55" stroke-width="1.5" />
+      <g id="cart" transform="translate(370 0)">
+        <path d="M -90 218 L -78 248 Q 0 268 78 248 L 90 218" fill="#e9ecef" stroke="#495057" stroke-width="3" stroke-linejoin="round" />
+        <line x1="-55" y1="257" x2="55" y2="257" stroke="#6c757d" stroke-width="3" />
+        <circle cx="-55" cy="270" r="7" fill="#495057" />
+        <circle cx="55" cy="270" r="7" fill="#495057" />
+      </g>
+      <circle id="ball" cx="130" cy="32" r="9" fill="#212529" />
+      <text x="280" y="295" text-anchor="middle">LEFT</text>
+      <text x="460" y="295" text-anchor="middle">RIGHT</text>
+    </svg>
+    <p id="play-status" class="status" aria-live="polite"></p>
+    <div class="buttons play-buttons">
+      <button id="start" type="button">Start ball</button>
+      <button id="choose-left" type="button" disabled>← Left</button>
+      <button id="choose-right" type="button" disabled>Right →</button>
+      <button id="reset" type="button">Reset</button>
+      <button id="plot-toggle" type="button" aria-expanded="false" aria-controls="plot-panel">Show scatterplot</button>
+    </div>
+  </section>
+  <section id="plot-panel" aria-labelledby="plot-title" hidden>
+    <div class="section-head"><h2 id="plot-title">Position × velocity</h2></div>
+    <svg id="plot" viewBox="0 0 500 360" role="img" aria-label="Position and velocity scatter plot of played rounds"></svg>
+    <div class="legend"><span><i class="left-dot"></i> left landing</span><span><i class="right-dot"></i> right landing</span><span><i class="miss-dot"></i> miss</span><span><i class="current-dot"></i> current ball</span></div>
+  </section>
+  </div>
+</main>
+</body>
+</html>
