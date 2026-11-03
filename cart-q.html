@@ -36,6 +36,8 @@
         <input id="speed" type="range" min="0.5" max="20" step="0.5" value="1">
         <label for="scale">Game size <output id="scale-value" for="scale">100%</output></label>
         <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label class="check"><input id="replay" type="checkbox" checked> Experience replay (learn from random past steps)</label>
+        <label class="check"><input id="target" type="checkbox" checked> Frozen target network (copied every 300 updates)</label>
         <label class="check"><input id="fast" type="checkbox"> Fast-forward (skip animation)</label>
         <label class="check"><input id="show-landing" type="checkbox"> Show where the ball will land</label>
         <div class="buttons"><button id="step" type="button">Step</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="reset" type="button">Reset</button></div>
@@ -50,7 +52,8 @@
         <div>Avg reward (last 50) <strong id="stat-reward">–</strong></div>
       </div>
       <svg id="reward-chart" class="chart" viewBox="0 0 500 220" role="img" aria-labelledby="reward-title"></svg>
-      <div class="legend"><span><i class="right-dot"></i> caught</span><span><i class="miss-fill"></i> missed</span><span><i class="boundary-line"></i> average of last 50</span><span id="memory-label"></span></div>
+      <div class="legend"><span><i class="right-dot"></i> caught</span><span><i class="miss-fill"></i> missed</span><span><i class="boundary-line"></i> this run, average of last 50</span><span id="memory-label"></span></div>
+      <div id="run-legend" class="legend run-legend" hidden></div>
 
       <div class="section-head"><h2 id="policy-title">Policy slice</h2><button id="policy-toggle" class="head-toggle" type="button" aria-expanded="false" aria-controls="policy-panel">Show</button></div>
       <div id="policy-panel" hidden>
@@ -67,7 +70,7 @@
         <div>act: random with prob. ε, else argmax<sub>a</sub> Q(s, a)</div>
         <div>target y = r + γ · Q<sub>target</sub>(s′, argmax<sub>a′</sub> Q(s′, a′)) · y = r at the end</div>
         <div>update: minimise Huber(Q(s, a) − y) with Adam</div>
-        <div class="formula-note">r = 0 until the ball arrives · replay memory 20 000 steps, batch 32 · target net copied every 300 updates · ε × 0.99 per episode (floor 0.05)</div>
+        <div class="formula-note">r = 0 until the ball arrives · replay: batch of 32 random steps from the last 20 000 (off: just the latest step) · target net copied every 300 updates (off: every update) · Reset keeps the last 3 runs on the chart · ε × 0.99 per episode (floor 0.05)</div>
       </div>
     </section>
   </div>

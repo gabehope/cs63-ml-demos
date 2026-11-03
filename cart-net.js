@@ -114,15 +114,17 @@ function remember(agent, s, a, r, s2, done) {
   m.size = Math.min(m.capacity, m.size + 1);
 }
 
-// One minibatch of double-DQN updates: target = r + γ·Q_target(s′, argmax Q(s′)), Huber loss, Adam.
-function learn(agent, { gamma = 0.98, rate = 0.001, batch = 32, sync = 300 } = {}) {
+// One double-DQN update: target = r + γ·Q_target(s′, argmax Q(s′)), Huber loss, Adam.
+// With replay, the update averages a random minibatch from memory; without it, only the step that just happened.
+function learn(agent, { gamma = 0.98, rate = 0.001, batch = 32, sync = 300, replay = true } = {}) {
   const m = agent.memory, dims = agent.net.sizes[0];
   agent.steps++;
-  if (m.size < Math.max(batch, 500)) return null;
+  if (!replay) batch = 1;
+  if (m.size < (replay ? Math.max(batch, 500) : 1)) return null;
   const grads = zeroGrads(agent.net);
   let lossSum = 0;
   for (let n = 0; n < batch; n++) {
-    const i = Math.floor(agent.random() * m.size);
+    const i = replay ? Math.floor(agent.random() * m.size) : (m.next - 1 + m.capacity) % m.capacity;
     const s = m.s.subarray(i * dims, (i + 1) * dims);
     let target = m.r[i];
     if (!m.done[i]) {

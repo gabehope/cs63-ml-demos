@@ -6,14 +6,15 @@ const ui = {
   epsilon: $('epsilon'), epsilonValue: $('epsilon-value'), rewardMode: $('reward-mode'),
   speed: $('speed'), speedValue: $('speed-value'), scale: $('scale'), scaleValue: $('scale-value'),
   fast: $('fast'), showLanding: $('show-landing'), step: $('step'), continuous: $('continuous'), reset: $('reset'),
-  chart: $('reward-chart'), caught: $('stat-caught'), missed: $('stat-missed'), rate50: $('stat-rate'), reward50: $('stat-reward'), memory: $('memory-label'),
+  chart: $('reward-chart'), caught: $('stat-caught'), missed: $('stat-missed'), rate50: $('stat-rate'), reward50: $('stat-reward'), memory: $('memory-label'), replay: $('replay'), target: $('target'), runLegend: $('run-legend'),
   policy: $('policy'), policyPanel: $('policy-panel'), policyToggle: $('policy-toggle'), network: $('network')
 };
 const SIZES = [6, 24, 24, 3];
 const EPSILON = { decay: 0.99, floor: 0.05 };
+const RUN_COLORS = ['#e8590c', '#6f42c1', '#868e96'];
 const scene = createScene(ui.game);
 const state = {
-  agent: createAgent({ sizes: SIZES }), game: newEpisode(), episodes: [], epsilon: 1, running: false,
+  agent: createAgent({ sizes: SIZES }), game: newEpisode(), episodes: [], previous: [], epsilon: 1, running: false,
   pending: null, last: null, hold: 0, banner: '', path: [], carry: 0, lastFrame: performance.now(),
   dirty: true, drawn: { chart: 0, weights: 0, policy: 0 }
 };
@@ -43,7 +44,7 @@ function completeStep() {
   const game = state.game;
   const reward = game.done ? terminalReward(game, ui.rewardMode.value) : 0;
   remember(state.agent, state.pending.s, state.pending.action, reward, features(game), game.done);
-  learn(state.agent, { gamma: Number(ui.gamma.value), rate: Number(ui.rate.value) });
+  learn(state.agent, { gamma: Number(ui.gamma.value), rate: Number(ui.rate.value), replay: ui.replay.checked, sync: ui.target.checked ? 300 : 1 });
   state.pending = null;
   if (game.done) endEpisode(reward);
 }
@@ -51,7 +52,7 @@ function completeStep() {
 function endEpisode(reward) {
   const game = state.game;
   state.path.push({ x: game.cart.x, v: game.cart.v });
-  state.episodes.push({ reward, caught: game.caught, miss: game.miss });
+  state.episodes.push({ reward, caught: game.caught, miss: game.miss, settings: settingsLabel() });
   if (state.epsilon > EPSILON.floor) state.epsilon = Math.max(EPSILON.floor, state.epsilon * EPSILON.decay);
   ui.epsilon.value = state.epsilon;
   showEpsilon();
@@ -140,8 +141,9 @@ function showStats() {
   ui.rate50.textContent = stats.total ? `${Math.round(100 * stats.rate)}%` : '–';
   ui.reward50.textContent = recent.length ? signedValue(recent.reduce((sum, e) => sum + e.reward, 0) / recent.length) : '–';
   ui.count.textContent = `${stats.total} ${stats.total === 1 ? 'episode' : 'episodes'}`;
-  ui.memory.textContent = `replay memory ${state.agent.memory.size.toLocaleString()} steps`;
-  drawRewardChart(ui.chart, state.episodes, { window: 50, minSpan: 50 });
+  ui.memory.textContent = ui.replay.checked ? `replay memory ${state.agent.memory.size.toLocaleString()} steps` : 'replay off: each step is learned from once';
+  drawRewardChart(ui.chart, state.episodes, { window: 50, minSpan: 50, previous: state.previous.map((run, i) => ({ episodes: run.episodes, color: RUN_COLORS[i] })) });
+  showRunLegend();
 }
 
 const SLICE = { L: 50, R: 486, T: 10, B: 200, cols: 72, rows: 36, vmax: 12 };
@@ -188,6 +190,32 @@ function drawPolicy() {
 
 const diagram = createNetworkDiagram(ui.network, SIZES);
 
+// Settings that shape learning, recorded with each episode so finished runs can be labelled.
+function settingsLabel() {
+  const parts = [ui.replay.checked ? 'replay' : 'no replay', ui.target.checked ? 'frozen target' : 'target every update', `lr ${Number(ui.rate.value).toFixed(4)}`, `γ ${Number(ui.gamma.value).toFixed(3)}`];
+  if (ui.rewardMode.value === 'catch') parts.push('±1 reward');
+  return parts.join(' · ');
+}
+
+function showRunLegend() {
+  ui.runLegend.replaceChildren();
+  ui.runLegend.hidden = !state.previous.length;
+  state.previous.forEach((run, i) => {
+    const item = document.createElement('span');
+    const swatch = document.createElement('i');
+    swatch.className = 'run-line';
+    swatch.style.borderColor = RUN_COLORS[i];
+    item.append(swatch, ` ${i ? `${i + 1} runs ago` : 'previous run'}: ${run.label}`);
+    ui.runLegend.appendChild(item);
+  });
+  const clear = document.createElement('button');
+  clear.type = 'button';
+  clear.className = 'link-button';
+  clear.textContent = 'Clear previous runs';
+  clear.addEventListener('click', () => { state.previous = []; state.dirty = true; });
+  ui.runLegend.appendChild(clear);
+}
+
 function showEpsilon() { ui.epsilonValue.textContent = state.epsilon.toFixed(2); }
 
 // ---------- Controls ----------
@@ -195,6 +223,11 @@ ui.step.addEventListener('click', stepOnce);
 ui.continuous.addEventListener('click', () => { setRunning(!state.running); state.carry = 0; });
 ui.reset.addEventListener('click', () => {
   setRunning(false);
+  if (state.episodes.length >= 20) {
+    const labels = [...new Set(state.episodes.map(e => e.settings))];
+    state.previous.unshift({ episodes: state.episodes, label: labels.length === 1 ? labels[0] : 'mixed settings' });
+    state.previous.length = Math.min(state.previous.length, RUN_COLORS.length);
+  }
   state.agent = createAgent({ sizes: SIZES });
   state.episodes = [];
   state.epsilon = 1;
@@ -204,6 +237,7 @@ ui.reset.addEventListener('click', () => {
   state.dirty = true;
   state.drawn.weights = 0;
 });
+ui.replay.addEventListener('change', () => { state.dirty = true; });
 ui.epsilon.addEventListener('input', () => { state.epsilon = Number(ui.epsilon.value); showEpsilon(); });
 ui.rate.addEventListener('input', () => { ui.rateValue.textContent = Number(ui.rate.value).toFixed(4); });
 ui.gamma.addEventListener('input', () => { ui.gammaValue.textContent = Number(ui.gamma.value).toFixed(3); });

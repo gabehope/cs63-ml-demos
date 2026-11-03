@@ -197,13 +197,27 @@ function outcomeText(game, reward) {
   return game.caught ? `Caught · reward ${signedValue(reward)}` : `Missed by ${game.miss.toFixed(1)} m · reward ${signedValue(reward)}`;
 }
 
+// Moving average of episode reward as an SVG path (sampled every `step` episodes).
+function movingAveragePath(episodes, window, x, y, step = 1) {
+  let d = '', sum = 0;
+  for (let i = 0; i < episodes.length; i++) {
+    sum += episodes[i].reward;
+    if (i >= window) sum -= episodes[i - window].reward;
+    if (i % step && i !== episodes.length - 1) continue;
+    d += `${d ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(sum / Math.min(window, i + 1)).toFixed(1)} `;
+  }
+  return d;
+}
+
 // Reward per episode: one dot per episode plus a moving average.
+// options.previous: earlier runs ({ episodes, color }) drawn as faded average lines for comparison.
 function drawRewardChart(root, episodes, options = {}) {
   root.replaceChildren();
   const H = 220, L = 46, R = 486, T = 12, B = 182;
   const window = options.window || 20;
   const count = episodes.length;
-  const span = Math.max(options.minSpan || 20, count);
+  const previous = options.previous || [];
+  const span = Math.max(options.minSpan || 20, count, ...previous.map(run => run.episodes.length));
   const x = i => L + i / (span - 1) * (R - L);
   const y = r => B - (r + 1) / 2 * (B - T);
   svgNode(root, 'rect', { x: L, y: T, width: R - L, height: B - T, fill: '#fff', stroke: '#adb5bd' });
@@ -215,6 +229,11 @@ function drawRewardChart(root, episodes, options = {}) {
   svgNode(root, 'text', { x: (L + R) / 2, y: H - 4, 'text-anchor': 'middle', class: 'chart-label' }, 'episode');
   svgNode(root, 'text', { x: 12, y: (T + B) / 2, 'text-anchor': 'middle', class: 'chart-label', transform: `rotate(-90 12 ${(T + B) / 2})` }, 'reward');
 
+  for (const run of previous) {
+    if (run.episodes.length < 2) continue;
+    const d = movingAveragePath(run.episodes, window, x, y, Math.max(1, Math.ceil(run.episodes.length / 700)));
+    svgNode(root, 'path', { d, fill: 'none', stroke: run.color, 'stroke-width': 1.5, 'stroke-opacity': 0.75 });
+  }
   const step = Math.max(1, Math.ceil(count / 700));
   const radius = count > 300 ? 1.6 : count > 80 ? 2.4 : 3.5;
   const dots = { caught: '', missed: '' };
@@ -224,16 +243,7 @@ function drawRewardChart(root, episodes, options = {}) {
   }
   svgNode(root, 'path', { d: dots.missed, fill: '#dc3545', 'fill-opacity': 0.55 });
   svgNode(root, 'path', { d: dots.caught, fill: '#0f766e', 'fill-opacity': 0.55 });
-  if (count >= 2) {
-    let d = '', sum = 0;
-    for (let i = 0; i < count; i++) {
-      sum += episodes[i].reward;
-      if (i >= window) sum -= episodes[i - window].reward;
-      if (i % step && i !== count - 1) continue;
-      d += `${d ? 'L' : 'M'} ${x(i).toFixed(1)} ${y(sum / Math.min(window, i + 1)).toFixed(1)} `;
-    }
-    svgNode(root, 'path', { d, fill: 'none', stroke: '#0d6efd', 'stroke-width': 2 });
-  }
+  if (count >= 2) svgNode(root, 'path', { d: movingAveragePath(episodes, window, x, y, step), fill: 'none', stroke: '#0d6efd', 'stroke-width': 2 });
 }
 
 function episodeStats(episodes, window = 50) {
