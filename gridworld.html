@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q-table gridworld</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="cart-game.js" defer></script>
+  <script src="grid-world.js" defer></script>
+  <script src="gridworld.js" defer></script>
+</head>
+<body>
+<main id="page" class="demo rl-page">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="gridvalue.html">V-table</a><a href="gridworld.html" aria-current="page">Q-table</a><a href="gridnet.html">Q-network grid</a><a href="gridcont.html">Continuous grid</a><a href="gridpg.html">Policy grid</a><a href="gridcontpg.html">Continuous policy grid</a><a href="cart-q.html">Q-learning</a><a href="cart-pg.html">Policy gradient</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Q-table gridworld</h1>
+  <div class="rl-layout">
+    <section class="rl-game" aria-labelledby="grid-title">
+      <div class="section-head"><h2 id="grid-title">Current Q-values</h2><span id="episode-label">Episode 1</span></div>
+      <svg id="grid" viewBox="0 0 600 451" role="img" aria-label="A gridworld. Each square shows the learned Q-value of moving north, east, south or west; the two exit squares show their reward."></svg>
+      <div class="legend grid-legend"><span><i class="updated-line"></i> Q(s, a) being updated</span><span><i class="used-line"></i> max<sub>a′</sub> Q(s′, a′): the largest value where it landed (an exit: its reward), used in the target</span></div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <div class="q-update" aria-live="off">
+        <div class="q-eq">Q(s, a) ← Q(s, a) + α[<span class="target" data-label="target">R(s) + γ max<sub>a′</sub> Q(s′, a′)</span> − Q(s, a)]</div>
+        <div id="update" class="q-eq q-eq-numbers"></div>
+      </div>
+      <div class="controls">
+        <label for="world">World</label>
+        <select id="world"></select>
+        <label for="alpha">Learning rate α <output id="alpha-value" for="alpha">0.50</output></label>
+        <input id="alpha" type="range" min="0.05" max="1" step="0.05" value="0.5">
+        <label for="gamma">Discount γ <output id="gamma-value" for="gamma">0.90</output></label>
+        <input id="gamma" type="range" min="0" max="1" step="0.01" value="0.9">
+        <label for="epsilon">Exploration ε <output id="epsilon-value" for="epsilon">0.30</output></label>
+        <input id="epsilon" type="range" min="0" max="1" step="0.01" value="0.3">
+        <label for="noise">Noise <output id="noise-value" for="noise">0.20</output></label>
+        <input id="noise" type="range" min="0" max="0.6" step="0.05" value="0.2">
+        <label for="living">Living reward <output id="living-value" for="living">0.00</output></label>
+        <input id="living" type="range" min="-0.5" max="0.5" step="0.01" value="0">
+        <label for="speed">Speed <output id="speed-value" for="speed">2 steps/s</output></label>
+        <input id="speed" type="range" min="1" max="30" step="1" value="2">
+        <label for="scale">Grid size <output id="scale-value" for="scale">100%</output></label>
+        <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label for="view">Show</label>
+        <select id="view"><option value="q">Q-values</option><option value="v">Values and policy</option></select>
+        <label class="check"><input id="show-policy" type="checkbox" checked> Show the best move in each square (values view)</label>
+        <label class="check"><input id="show-moves" type="checkbox" checked> Show the last move</label>
+        <div class="buttons"><button id="step" type="button">Step</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="episodes" type="button">Run 100 episodes</button><button id="reset" type="button">Reset</button></div>
+      </div>
+      <p class="hint">Arrow keys: pick the action yourself (the table still learns from it)</p>
+    </section>
+    <section class="rl-side">
+      <div class="section-head"><h2 id="reward-title">Reward per episode</h2><span id="count-label">0 episodes</span></div>
+      <div class="dataset-stats rl-stats">
+        <div>Positive exits <strong id="stat-win">0</strong></div>
+        <div>Negative exits <strong id="stat-lose">0</strong></div>
+        <div>Avg reward (last 20) <strong id="stat-reward">–</strong></div>
+      </div>
+      <svg id="reward-chart" class="chart" viewBox="0 0 500 220" role="img" aria-labelledby="reward-title"></svg>
+      <div class="legend"><span><i class="right-dot"></i> positive exit</span><span><i class="miss-fill"></i> negative exit</span><span><i class="boundary-line"></i> average of last 20</span></div>
+      <div class="section-head"><h2>Recent updates</h2></div>
+      <table class="state-table update-log">
+        <thead><tr><th>Q(s, a)</th><th>old</th><th>target</th><th>new</th></tr></thead>
+        <tbody id="update-log"></tbody>
+      </table>
+      <div class="formulas">
+        <div>act: random with prob. ε, else argmax<sub>a</sub> Q(s, a)</div>
+        <div>R(s) = the living reward on a plain square · an exit's value is its own reward, V(exit) = R(exit), and the episode ends there (it replaces the max)</div>
+        <div class="formula-note">a move goes the intended way with prob. 1 − noise, otherwise to one side · reward per episode = sum of R(s) along the way, exit included</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

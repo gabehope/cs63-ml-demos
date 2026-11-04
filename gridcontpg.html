@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Continuous policy gradient gridworld</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="cart-game.js" defer></script>
+  <script src="cart-net.js" defer></script>
+  <script src="grid-world.js" defer></script>
+  <script src="gridcont.js" defer></script>
+</head>
+<body data-method="reinforce">
+<main id="page" class="demo rl-page">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="gridvalue.html">V-table</a><a href="gridworld.html">Q-table</a><a href="gridnet.html">Q-network grid</a><a href="gridcont.html">Continuous grid</a><a href="gridpg.html">Policy grid</a><a href="gridcontpg.html" aria-current="page">Continuous policy grid</a><a href="cart-q.html">Q-learning</a><a href="cart-pg.html">Policy gradient</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Continuous policy gradient gridworld (REINFORCE)</h1>
+  <div class="rl-layout">
+    <section class="rl-game" aria-labelledby="main-title">
+      <div class="section-head"><h2 id="main-title">Most likely move, shaded by how likely (max π)</h2><span id="episode-label">Episode 1</span></div>
+      <canvas id="main-plot" class="world-plot" role="img" aria-label="Heatmap of the policy's move probabilities over the continuous world, with the agent and its path"></canvas>
+      <div class="legend grid-legend"><span><i class="prob-scale"></i> less → more likely</span><span><i class="trail-line"></i> this episode's path</span></div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <div class="q-update" aria-live="off">
+        <div class="q-eq">θ ← θ + α Σ<sub>t</sub> [<span class="target" data-label="advantage">G<sub>t</sub> − b</span>] ∇<sub>θ</sub> log π(a<sub>t</sub> | s<sub>t</sub>)</div>
+        <div id="update" class="q-eq q-eq-numbers"></div>
+      </div>
+      <div class="controls">
+        <label for="world">World</label>
+        <select id="world"></select>
+        <label for="layers">Hidden layers</label>
+        <select id="layers"><option value="8">8 units</option><option value="8,8" selected>8 + 8 units</option><option value="16,16">16 + 16 units (better for the maze)</option></select>
+        <label for="alpha">Learning rate α <output id="alpha-value" for="alpha">0.010</output></label>
+        <input id="alpha" type="range" min="0.001" max="0.05" step="0.001" value="0.01">
+        <label for="gamma">Discount γ <output id="gamma-value" for="gamma">0.90</output></label>
+        <input id="gamma" type="range" min="0" max="1" step="0.01" value="0.9">
+        <label for="entropy">Entropy bonus β <output id="entropy-value" for="entropy">0.010</output></label>
+        <input id="entropy" type="range" min="0" max="0.05" step="0.005" value="0.01">
+        <label for="length">Step length <output id="length-value" for="length">0.50</output></label>
+        <input id="length" type="range" min="0.1" max="1" step="0.05" value="0.5">
+        <label for="length-noise">Length noise <output id="length-noise-value" for="length-noise">0.10</output></label>
+        <input id="length-noise" type="range" min="0" max="0.4" step="0.02" value="0.1">
+        <label for="angle-noise">Angle noise <output id="angle-noise-value" for="angle-noise">10°</output></label>
+        <input id="angle-noise" type="range" min="0" max="45" step="1" value="10">
+        <label for="living">Living reward <output id="living-value" for="living">-0.05</output></label>
+        <input id="living" type="range" min="-0.5" max="0.5" step="0.01" value="-0.05">
+        <label for="speed">Speed <output id="speed-value" for="speed">4 steps/s</output></label>
+        <input id="speed" type="range" min="1" max="60" step="1" value="4">
+        <label for="scale">Plot size <output id="scale-value" for="scale">100%</output></label>
+        <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label class="check"><input id="baseline" type="checkbox" checked> Baseline b (subtract the average return so far)</label>
+        <label class="check"><input id="show-arrows" type="checkbox" checked> Show the most likely move at a grid of points</label>
+        <div class="buttons"><button id="step" type="button">Step</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="episodes" type="button">Run 100 episodes</button><button id="reset" type="button">Reset</button></div>
+      </div>
+      <p class="hint">Arrow keys: pick the move yourself (it is learned from as if the policy had chosen it)</p>
+    </section>
+    <section class="rl-side">
+      <div class="section-head"><h2>Probability of each move</h2><span>hover one to show it above</span></div>
+      <div class="q-grid">
+        <div class="q-card" tabindex="0" aria-label="Show π(north | s) in the main plot"><span>↑ north</span><canvas id="q-plot-0" class="world-plot"></canvas></div>
+        <div class="q-card" tabindex="0" aria-label="Show π(east | s) in the main plot"><span>→ east</span><canvas id="q-plot-1" class="world-plot"></canvas></div>
+        <div class="q-card" tabindex="0" aria-label="Show π(west | s) in the main plot"><span>← west</span><canvas id="q-plot-3" class="world-plot"></canvas></div>
+        <div class="q-card" tabindex="0" aria-label="Show π(south | s) in the main plot"><span>↓ south</span><canvas id="q-plot-2" class="world-plot"></canvas></div>
+      </div>
+      <div class="section-head"><h2 id="network-title">Network</h2></div>
+      <svg id="network" class="network q-network" viewBox="0 0 500 270" role="img" aria-labelledby="network-title"></svg>
+      <div class="legend"><span><i class="weight-pos"></i> positive weight</span><span><i class="weight-neg"></i> negative weight</span><span>hover over a hidden unit to see its output at each point</span></div>
+      <div class="section-head"><h2 id="reward-title">Reward per episode</h2><span id="count-label">0 episodes</span></div>
+      <div class="dataset-stats rl-stats">
+        <div>Positive exits <strong id="stat-win">0</strong></div>
+        <div>Negative exits <strong id="stat-lose">0</strong></div>
+        <div>Avg reward (last 20) <strong id="stat-reward">–</strong></div>
+      </div>
+      <svg id="reward-chart" class="chart" viewBox="0 0 500 220" role="img" aria-labelledby="reward-title"></svg>
+      <div class="legend"><span><i class="right-dot"></i> positive exit</span><span><i class="miss-fill"></i> negative exit</span><span><i class="boundary-line"></i> average of last 20</span></div>
+      <div class="section-head"><h2>Last episode's update</h2></div>
+      <table class="state-table update-log">
+        <thead><tr><th>move</th><th>G<sub>t</sub></th><th>G<sub>t</sub> − b</th><th>π(move)</th></tr></thead>
+        <tbody id="update-log"></tbody>
+      </table>
+      <div class="formulas">
+        <div>s = (x, y), any point · π(· | s) = softmax(network(x, y)): one probability per move</div>
+        <div>move: distance ≈ step length ± length noise, at the chosen direction ± angle noise; walls stop it</div>
+        <div>act: sample a from π(· | s), no ε needed</div>
+        <div>after each episode: G<sub>t</sub> = R(s<sub>t</sub>) + γ G<sub>t+1</sub> (ending with the exit's reward), then one step with Adam on every move's log π(a<sub>t</sub> | s<sub>t</sub>), weighted by G<sub>t</sub> − b</div>
+        <div class="formula-note">b = running average of the returns · entropy bonus β keeps the policy from becoming certain too early · R(s) = the living reward on a plain square, the exit's reward on an exit · reward per episode = sum of R(s) along the way, exit included</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

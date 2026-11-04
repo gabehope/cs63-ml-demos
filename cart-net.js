@@ -197,8 +197,38 @@ function evaluateClassifier(model, examples) {
   return { loss: loss / examples.length, accuracy: correct / examples.length };
 }
 
+// ---------- Policy gradient (REINFORCE) ----------
+// The network's outputs are action preferences; π(a | s) = softmax(outputs). Actions are sampled from π.
+function createPolicy(options = {}) {
+  const random = options.random || Math.random;
+  const net = createNetwork(options.sizes || [6, 24, 24, 3], random);
+  return { net, random, adam: createAdam(net), updates: 0 };
+}
+function sampleAction(policy, input) {
+  const p = actionProbabilities(policy.net, input);
+  let u = policy.random(), a = 0;
+  while (a < p.length - 1 && u >= p[a]) { u -= p[a]; a++; }
+  return { action: a, p };
+}
+// One update from a whole episode: θ ← θ + α Σ_t A_t ∇ log π(a_t | s_t), where A_t is how much better than the
+// baseline the return from step t was. An optional entropy bonus (β) keeps the policy from becoming certain too early.
+function reinforce(policy, steps, { rate = 0.001, entropy = 0 } = {}) {
+  const grads = zeroGrads(policy.net);
+  for (const { s, a, advantage } of steps) {
+    const acts = forwardPass(policy.net, s);
+    const p = softmax(Array.from(acts[acts.length - 1]));
+    const h = -p.reduce((sum, pk) => sum + pk * Math.log(Math.max(1e-12, pk)), 0);
+    // Gradient of the loss −A log π(a | s) − β H(π) with respect to the preferences.
+    const delta = p.map((pk, k) => advantage * (pk - (k === a ? 1 : 0)) + entropy * pk * (Math.log(Math.max(1e-12, pk)) + h));
+    backprop(policy.net, acts, delta, grads);
+  }
+  adamStep(policy.net, policy.adam, grads, steps.length, rate);
+  policy.updates++;
+}
+
 if (typeof module !== 'undefined') module.exports = {
   createNetwork, forwardPass, outputs, qValues, argmax, softmax,
   createAgent, chooseAction, remember, learn,
-  createClassifier, actionProbabilities, trainBatch, trainEpoch, evaluateClassifier
+  createClassifier, actionProbabilities, trainBatch, trainEpoch, evaluateClassifier,
+  createPolicy, sampleAction, reinforce
 };

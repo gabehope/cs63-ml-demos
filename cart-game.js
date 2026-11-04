@@ -219,7 +219,7 @@ function drawRewardChart(root, episodes, options = {}) {
   const previous = options.previous || [];
   const span = Math.max(options.minSpan || 20, count, ...previous.map(run => run.episodes.length));
   const x = i => L + i / (span - 1) * (R - L);
-  const y = r => B - (r + 1) / 2 * (B - T);
+  const y = r => B - (Math.max(-1, Math.min(1, r)) + 1) / 2 * (B - T);
   svgNode(root, 'rect', { x: L, y: T, width: R - L, height: B - T, fill: '#fff', stroke: '#adb5bd' });
   for (const r of [-1, -0.5, 0, 0.5, 1]) {
     svgNode(root, 'line', { x1: L, x2: R, y1: y(r), y2: y(r), stroke: '#e9ecef' });
@@ -254,23 +254,26 @@ function episodeStats(episodes, window = 50) {
 }
 
 // Network diagram inside an <svg viewBox="0 0 500 270">: weights drawn as bundled paths (sign × strength),
-// nodes shaded by activation. options: outputLabels, outputCaption.
+// nodes shaded by activation. options: inputLabels, outputLabels, outputCaption.
 function createNetworkDiagram(root, sizes, options = {}) {
   const last = sizes.length - 1;
   const xs = sizes.map((_, l) => 84 + l * (430 - 84) / last);
-  const spacing = n => n <= 3 ? 52 : n <= 8 ? 40 : 10.2;
+  const spacing = n => n <= 3 ? 52 : n <= 6 ? 40 : n <= 12 ? 23 : 10.2;
   const layout = sizes.map((n, l) => Array.from({ length: n }, (_, i) => ({ x: xs[l], y: 135 + (i - (n - 1) / 2) * spacing(n) })));
   const weightPaths = [0, 1].map(sign => [0.12, 0.25, 0.45, 0.75].map(opacity => svgNode(root, 'path', { fill: 'none', stroke: sign ? '#0d6efd' : '#e8590c', 'stroke-opacity': opacity, 'stroke-width': 1 })));
-  const radius = l => l === 0 ? 14 : l === last ? 15 : 4;
+  const radius = l => l === 0 || l === last ? Math.min(l === 0 ? 14 : 15, spacing(sizes[l]) * 0.42) : spacing(sizes[l]) > 20 ? 7 : 4;
   layout.forEach((layer, l) => layer.forEach(p => svgNode(root, 'circle', { cx: p.x, cy: p.y, r: radius(l), class: 'q-node-bg' })));
   const nodes = layout.map((layer, l) => layer.map(p => svgNode(root, 'circle', { cx: p.x, cy: p.y, r: radius(l), class: 'q-node' })));
-  CART.FEATURES.forEach((feature, i) => svgNode(root, 'text', { x: xs[0], y: layout[0][i].y + 4, 'text-anchor': 'middle' }, feature.name));
-  const inputValues = layout[0].map(p => svgNode(root, 'text', { x: xs[0] - 22, y: p.y + 4, 'text-anchor': 'end', class: 'q-net-value' }));
+  const inputLabels = options.inputLabels || CART.FEATURES.map(feature => feature.name);
+  // Inputs too small to hold a label get it beside them instead of their value.
+  const labelsOutside = radius(0) < 12;
+  const inputValues = layout[0].map((p, i) => svgNode(root, 'text', { x: xs[0] - (labelsOutside ? 12 : 22), y: p.y + 4, 'text-anchor': 'end', class: labelsOutside ? 'q-net-label' : 'q-net-value' }, labelsOutside ? inputLabels[i] : undefined));
+  if (!labelsOutside) inputLabels.forEach((label, i) => svgNode(root, 'text', { x: xs[0], y: layout[0][i].y + 4, 'text-anchor': 'middle' }, label));
   (options.outputLabels || ['←', '0', '→']).forEach((label, i) => svgNode(root, 'text', { x: xs[last], y: layout[last][i].y + 4, 'text-anchor': 'middle' }, label));
   const outputValues = layout[last].map(p => svgNode(root, 'text', { x: xs[last] + 22, y: p.y + 4, class: 'q-net-value' }));
   for (let l = 1; l < last; l++) svgNode(root, 'text', { x: xs[l], y: 266, 'text-anchor': 'middle', class: 'network-caption' }, `hidden ${l}`);
   svgNode(root, 'text', { x: xs[last], y: 266, 'text-anchor': 'middle', class: 'network-caption' }, options.outputCaption || 'Q(s, a)');
-  return { layout, weightPaths, nodes, inputValues, outputValues };
+  return { layout, weightPaths, nodes, inputValues, outputValues, labelsOutside };
 }
 
 function drawNetworkWeights(diagram, net) {
@@ -303,7 +306,7 @@ function drawNetworkActivations(diagram, acts, { chosen = null, probabilities = 
       node.style.stroke = l === last && chosen === i ? '#0d6efd' : '';
     });
   });
-  acts[0].forEach((v, i) => { diagram.inputValues[i].textContent = signedValue(v); });
+  if (!diagram.labelsOutside) acts[0].forEach((v, i) => { diagram.inputValues[i].textContent = signedValue(v); });
   acts[last].forEach((v, i) => { diagram.outputValues[i].textContent = probabilities ? `${Math.round(100 * probabilities[i])}%` : signedValue(v, 3); });
 }
 
