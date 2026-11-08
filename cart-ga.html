@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Genetic algorithm cart</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="cart-game.js" defer></script>
+  <script src="cart-net.js" defer></script>
+  <script src="cart-ga.js" defer></script>
+</head>
+<body>
+<main id="page" class="demo rl-page">
+  <nav class="page-nav" aria-label="Demo pages"><a href="index.html">Perceptron</a><a href="play.html">Play yourself</a><a href="ballistic.html">Ballistic</a><a href="neural.html">Neural network</a><a href="dataset.html">Fixed dataset</a><a href="cart-play.html">Drive the cart</a><a href="gridvalue.html">V-table</a><a href="gridworld.html">Q-table</a><a href="gridnet.html">Q-network grid</a><a href="gridcont.html">Continuous grid</a><a href="gridpg.html">Policy grid</a><a href="gridcontpg.html">Continuous policy grid</a><a href="cart-q.html">Q-learning</a><a href="cart-pg.html">Policy gradient</a><a href="cart-ga.html" aria-current="page">Genetic algorithm</a><a href="cart-imitate.html">Imitate me</a></nav>
+  <h1>Genetic algorithm cart</h1>
+  <div class="rl-layout">
+    <section class="rl-game" aria-labelledby="game-title">
+      <div class="section-head"><h2 id="game-title">Game</h2><span id="champion-label">Generation 0 best</span></div>
+      <svg id="game" viewBox="0 0 600 300" role="img" aria-label="A ball is launched from the left; the best network so far drives the cart to catch it"></svg>
+      <p id="ga-status" class="status" aria-live="off"></p>
+      <div class="q-update ga-trace" aria-live="off">
+        <div class="ga-trace-head">Tracing one offspring</div>
+        <svg id="trace" viewBox="0 0 600 118" role="img" aria-label="Two parent chromosomes, the crossover point, and the child with its mutated genes outlined"></svg>
+        <div id="trace-text" class="q-eq-numbers ga-trace-text"></div>
+      </div>
+      <div class="controls">
+        <label for="population">Population n <output id="population-value" for="population">30</output></label>
+        <input id="population" type="range" min="10" max="60" step="2" value="30">
+        <label for="balls">Balls each K <output id="balls-value" for="balls">20</output></label>
+        <input id="balls" type="range" min="5" max="40" step="5" value="20">
+        <label for="cross">pCross <output id="cross-value" for="cross">0.70</output></label>
+        <input id="cross" type="range" min="0" max="1" step="0.05" value="0.7">
+        <label for="mutate">pMutate <output id="mutate-value" for="mutate">0.05</output></label>
+        <input id="mutate" type="range" min="0" max="0.3" step="0.01" value="0.05">
+        <label for="sigma">Mutation σ <output id="sigma-value" for="sigma">0.50</output></label>
+        <input id="sigma" type="range" min="0.05" max="1.5" step="0.05" value="0.5">
+        <label for="selection">Selection</label>
+        <select id="selection"><option value="proportional">proportional to fitness</option><option value="tournament">tournament (better of 2)</option></select>
+        <label for="speed">Gens / second <output id="speed-value" for="speed">3</output></label>
+        <input id="speed" type="range" min="0.5" max="30" step="0.5" value="3">
+        <label for="scale">Game size <output id="scale-value" for="scale">100%</output></label>
+        <input id="scale" type="range" min="0.6" max="2.4" step="0.1" value="1">
+        <label class="check"><input id="elitism" type="checkbox" checked> Elitism (copy the best individual into the next generation unchanged)</label>
+        <label class="check"><input id="show-landing" type="checkbox"> Show where the ball will land</label>
+        <div class="buttons"><button id="step" type="button">Next generation</button><button id="continuous" type="button" aria-pressed="false">Run continuously</button><button id="reset" type="button">Reset</button></div>
+      </div>
+    </section>
+    <section class="rl-side">
+      <div class="section-head"><h2 id="fitness-title">Fitness per generation</h2><span id="count-label">0 episodes played</span></div>
+      <div class="dataset-stats rl-stats">
+        <div>Generation <strong id="stat-generation">0</strong></div>
+        <div>Best fitness <strong id="stat-best">–</strong></div>
+        <div>Avg fitness <strong id="stat-avg">–</strong></div>
+        <div>Best caught <strong id="stat-caught">–</strong></div>
+      </div>
+      <svg id="fitness-chart" class="chart" viewBox="0 0 500 220" role="img" aria-labelledby="fitness-title"></svg>
+      <div class="legend"><span><i class="boundary-line"></i> best</span><span><i class="actual-line"></i> average</span><span><i class="train-dot"></i> each individual</span></div>
+      <div id="run-legend" class="legend run-legend" hidden></div>
+
+      <div class="section-head"><h2 id="population-title">Population</h2><span id="population-label"></span></div>
+      <div class="ga-table-wrap">
+        <table class="state-table ga-table" aria-labelledby="population-title">
+          <thead><tr><th scope="col">Individual</th><th scope="col">Chromosome</th><th scope="col">Fitness</th><th scope="col">Selection rate</th></tr></thead>
+          <tbody id="population-rows"></tbody>
+        </table>
+      </div>
+      <div class="legend"><span><i class="swatch gene-pos"></i> positive weight</span><span><i class="swatch gene-neg"></i> negative weight</span><span><span class="ga-tag kept">kept</span> best of the last generation, copied unchanged</span><span><span class="ga-tag child">child</span> the offspring traced under the game</span></div>
+
+      <div class="section-head"><h2 id="network-title">Best network</h2></div>
+      <svg id="network" class="network q-network" viewBox="0 0 500 270" role="img" aria-labelledby="network-title"></svg>
+      <div class="legend"><span><i class="weight-pos"></i> positive weight</span><span><i class="weight-neg"></i> negative weight</span></div>
+      <div class="formulas">
+        <div>s = (bx, by, bvx, bvy, cx, cv) · actions: left, coast, right · same game and reward as Q-learning and REINFORCE</div>
+        <div>chromosome = the 83 weights and biases of a 6 → 8 → 3 network, each first drawn from N(0, 0.5²) · act: the move with the largest output</div>
+        <div>fitness = average reward over K balls (+1 catch, −d/10 miss) · everyone plays the same K balls, new balls each generation</div>
+        <div>selection ∝ fitness − worst fitness · crossover: cut both parents at one random gene and swap the tails · mutation: each gene, with probability pMutate, gets + N(0, σ²)</div>
+        <div class="formula-note">no gradients and no credit for individual moves: only each network's total score matters · Reset keeps the last 3 runs on the chart</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

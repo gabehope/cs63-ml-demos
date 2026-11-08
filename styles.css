@@ -118,6 +118,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #0d6efd; outline-
 .section-head .head-toggle { padding: 0; border: 0; background: none; color: #0d6efd; font-size: .8rem; }
 .section-head .head-toggle:hover { text-decoration: underline; filter: none; }
 .panel-note { margin: 0 0 8px; }
+.legend[hidden] { display: none; }
 .run-legend { flex-direction: column; gap: 6px; margin-top: -8px; }
 .legend .run-line { width: 14px; height: 0; border-radius: 0; border-top: 2px solid; }
 .legend .link-button { align-self: flex-start; padding: 0; border: 0; background: none; color: #0d6efd; font-size: .75rem; }
@@ -185,3 +186,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid #0d6efd; outline-
 .legend .more-line { width: 14px; height: 0; border-radius: 0; border-top: 3px solid rgba(15, 118, 110, .8); }
 .legend .less-line { width: 14px; height: 0; border-radius: 0; border-top: 3px solid rgba(220, 53, 69, .8); }
 .legend .prob-scale { width: 48px; height: 9px; border-radius: 2px; background: linear-gradient(to right, rgba(13, 110, 253, .06), rgba(13, 110, 253, .66)); border: 1px solid #dee2e6; }
+.ga-trace .ga-trace-head { margin-bottom: 6px; font: 600 .8rem system-ui, sans-serif; color: #495057; }
+.ga-trace svg { display: block; width: 100%; height: auto; }
+.ga-trace .ga-row-label { fill: #6c757d; font: 11px system-ui, sans-serif; }
+.ga-trace .ga-row-label.parent { font-weight: 600; fill: #495057; }
+.ga-trace .ga-trace-text { margin: 4px 0 10px; font: .78rem/1.6 ui-monospace, monospace; }
+.ga-table-wrap { max-height: 300px; overflow-y: auto; border-bottom: 1px solid #dee2e6; }
+.ga-table th { position: sticky; top: 0; background: #fff; padding: 4px 6px; border-bottom: 1px solid #dee2e6; color: #6c757d; font-weight: 500; font-size: .75rem; text-align: left; }
+.ga-table td { padding: 2px 6px; }
+.ga-genes { display: block; width: 100%; height: 12px; image-rendering: pixelated; border: 1px solid #e9ecef; }
+.ga-tag { display: inline-block; margin-left: 5px; padding: 0 4px; border-radius: 3px; font: 600 .65rem system-ui, sans-serif; color: #495057; background: #e9ecef; }
+.ga-tag.child { color: #fff; background: #0d6efd; }
+.legend .ga-tag { margin-left: 0; }
+.legend .gene-pos { background: #0d6efd; }
+.legend .gene-neg { background: #e8590c; }
